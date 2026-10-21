@@ -1,0 +1,17 @@
+services:
+  zappa:
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # Mount AWS credentials from host
+      - ~/.aws:/root/.aws:ro
+      # Mount current workspace for live code
+      - .:/app
+    environment:
+      - AWS_PROFILE=${AWS_PROFILE:-default}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-2}
+      - SQLITE_S3_BUCKET=${SQLITE_S3_BUCKET}
+      - USE_S3_SQLITE=true
+    command: ["status", "dev"]

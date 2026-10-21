@@ -1,0 +1,109 @@
+name: CI & CD (Zappa AWS Lambda)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: 'Zappa stage to deploy (dev or prod)'
+        required: true
+        default: 'dev'
+
+jobs:
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Run Pre-commit Hooks via prek
+        run: uv run prek run --all-files
+
+      - name: Run Tests
+        env:
+          USE_S3_SQLITE: "false" # Run unit tests against local SQLite
+        run: uv run pytest
+
+  deploy:
+    name: Deploy to AWS Lambda
+    needs: test
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Check for AWS Credentials
+        id: check-creds
+        run: |
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ] || [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "has_creds=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Missing AWS Credentials::AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY secrets are not configured in this repository. Skipping automated Lambda deployment."
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "::error::Deployment triggered manually but AWS credentials secrets are missing in repository settings."
+              exit 1
+            fi
+          else
+            echo "has_creds=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install uv
+        if: steps.check-creds.outputs.has_creds == 'true'
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          version: "latest"
+
+      - name: Set up Python
+        if: steps.check-creds.outputs.has_creds == 'true'
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        if: steps.check-creds.outputs.has_creds == 'true'
+        run: uv sync --all-extras --dev
+
+      - name: Configure AWS Credentials
+        if: steps.check-creds.outputs.has_creds == 'true'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION || 'us-east-2' }}
+
+      - name: Collect Static Files
+        if: steps.check-creds.outputs.has_creds == 'true'
+        env:
+          USE_S3_SQLITE: "false"
+        run: |
+          uv run python manage.py collectstatic --noinput
+
+      - name: Deploy to Zappa
+        if: steps.check-creds.outputs.has_creds == 'true'
+        env:
+          STAGE: ${{ github.event.inputs.stage || 'dev' }}
+        run: |
+          # Try update first; if stack does not exist yet, run deploy
+          uv run zappa update $STAGE || uv run zappa deploy $STAGE
+
+      - name: Run Remote Migrations
+        if: steps.check-creds.outputs.has_creds == 'true'
+        env:
+          STAGE: ${{ github.event.inputs.stage || 'dev' }}
+        run: |
+          uv run zappa manage $STAGE migrate

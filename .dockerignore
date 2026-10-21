@@ -1,0 +1,37 @@
+# Virtual environment & dependencies
+.venv/
+venv/
+ENV/
+env/
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+
+# Git & CI/CD
+.git/
+.github/
+
+# Spec & Agent tooling
+.agents/
+.specify/
+
+# Environment files & secrets
+.env
+.env.*
+!.env.example
+
+# Local SQLite databases
+*.sqlite3
+db.sqlite3
+
+# Static files cache
+staticfiles/
+
+# Logs & temp files
+*.log
+*.tmp
+tmp/

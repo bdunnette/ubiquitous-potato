@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Django + Zappa + uv Template</title>
+    <style>
+        :root {
+            --primary: #092e20;
+            --primary-accent: #008f5d;
+            --secondary: #2b3a42;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --badge-green: #dcfce7;
+            --badge-green-text: #15803d;
+            --badge-blue: #dbeafe;
+            --badge-blue-text: #1d4ed8;
+            --badge-amber: #fef3c7;
+            --badge-amber-text: #b45309;
+            --danger: #ef4444;
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+        }
+
+        .badge-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge-green { background-color: var(--badge-green); color: var(--badge-green-text); }
+        .badge-blue { background-color: var(--badge-blue); color: var(--badge-blue-text); }
+        .badge-amber { background-color: var(--badge-amber); color: var(--badge-amber-text); }
+
+        .card {
+            background-color: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--secondary);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        @media (min-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .status-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .status-table td {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+        .status-table td:first-child {
+            color: var(--text-muted);
+            font-weight: 500;
+            width: 40%;
+        }
+        .status-table td:last-child {
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        /* Form elements */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.95rem;
+            outline: none;
+        }
+        input[type="text"]:focus, textarea:focus {
+            border-color: var(--primary-accent);
+        }
+        button.btn {
+            background-color: var(--primary-accent);
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button.btn:hover {
+            background-color: #007049;
+        }
+        button.btn-danger {
+            background-color: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 0.2rem 0.5rem;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button.btn-danger:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .messages {
+            margin-bottom: 1.5rem;
+        }
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+        .alert-success { background-color: var(--badge-green); color: var(--badge-green-text); }
+        .alert-info { background-color: var(--badge-blue); color: var(--badge-blue-text); }
+        .alert-error { background-color: #fee2e2; color: #b91c1c; }
+
+        .items-list {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background: #f1f5f9;
+            border-radius: var(--radius);
+        }
+        .item-details h4 {
+            font-size: 1rem;
+            color: var(--text);
+        }
+        .item-details p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: var(--radius);
+            font-size: 0.85rem;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+        }
+        code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Django Serverless Template</h1>
+            <p class="subtitle">AWS Lambda via Zappa &bull; S3-backed SQLite &bull; uv Package Manager</p>
+            <div class="badge-bar">
+                <span class="badge badge-green">Python {{ python_version }}</span>
+                <span class="badge badge-green">Django {{ django_version }}</span>
+                <span class="badge {% if is_s3_sqlite %}badge-blue{% else %}badge-amber{% endif %}">
+                    DB: {{ db_engine|slice:":25" }}
+                </span>
+                <span class="badge {% if is_lambda %}badge-green{% else %}badge-blue{% endif %}">
+                    Environment: {% if is_lambda %}AWS Lambda{% else %}Local{% endif %}
+                </span>
+                <span class="badge badge-blue">Static: {{ static_backend }}</span>
+            </div>
+        </header>
+
+        {% if messages %}
+        <div class="messages">
+            {% for msg in messages %}
+            <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="grid-2">
+            <!-- Diagnostics Card -->
+            <div class="card">
+                <h2 class="card-title">Environment Diagnostics</h2>
+                <table class="status-table">
+                    <tr>
+                        <td>Database Backend</td>
+                        <td>{{ db_engine }}</td>
+                    </tr>
+                    <tr>
+                        <td>S3 SQLite Bucket</td>
+                        <td>{{ s3_bucket }}</td>
+                    </tr>
+                    <tr>
+                        <td>Database File</td>
+                        <td>{{ s3_db_name }}</td>
+                    </tr>
+                    <tr>
+                        <td>AWS Region</td>
+                        <td>{{ aws_region }}</td>
+                    </tr>
+                    <tr>
+                        <td>Execution Host</td>
+                        <td>{{ lambda_function_name }}</td>
+                    </tr>
+                    <tr>
+                        <td>Debug Mode</td>
+                        <td>{{ debug }}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Interactive Database Persistence Card -->
+            <div class="card">
+                <h2 class="card-title">Test S3 Database Persistence</h2>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Adding an item writes to SQLite in <code>/tmp</code>. When the request completes, <code>django-s3-sqlite</code> automatically uploads the modified database file to Amazon S3!
+                </p>
+                <form method="post" action="{% url 'home' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="title">Title</label>
+                        <input type="text" id="title" name="title" placeholder="e.g. Test record" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description (optional)</label>
+                        <textarea id="description" name="description" rows="2" placeholder="Describe the item..."></textarea>
+                    </div>
+                    <button type="submit" class="btn">Save Record to Database</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Saved Records Section -->
+        <div class="card">
+            <h2 class="card-title">Persisted Records ({{ item_count }})</h2>
+            {% if items %}
+            <div class="items-list">
+                {% for item in items %}
+                <div class="item-row">
+                    <div class="item-details">
+                        <h4>{{ item.title }}</h4>
+                        {% if item.description %}<p>{{ item.description }}</p>{% endif %}
+                        <p><small>Created: {{ item.created_at|date:"Y-m-d H:i:s" }} UTC</small></p>
+                    </div>
+                    <form method="post" action="{% url 'delete_item' item.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-danger">Delete</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color: var(--text-muted); font-size: 0.95rem;">No records saved yet. Use the form above to insert a record into the database.</p>
+            {% endif %}
+        </div>
+
+        <!-- Deployment Quick Reference Card -->
+        <div class="card">
+            <h2 class="card-title">Zappa & uv Quick Reference</h2>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                Useful commands for local management and deploying to AWS Lambda:
+            </p>
+            <pre><code># 1. Install dependencies with uv
+uv sync
+
+# 2. Run local migrations
+uv run python manage.py migrate
+
+# 3. Start local development server
+uv run python manage.py runserver
+
+# 4. Deploy first time to AWS Lambda via Zappa
+uv run zappa deploy dev
+
+# 5. Subsequent updates after code changes
+uv run zappa update dev
+
+# 6. Execute migrations remotely on AWS Lambda
+uv run zappa manage dev migrate
+
+# 7. View CloudWatch logs in real-time
+uv run zappa tail dev</code></pre>
+        </div>
+
+        <footer>
+            <p>Django Serverless Template &bull; Health Check: <a href="{% url 'health_check' %}">/health/</a> &bull; Admin: <a href="{% url 'admin:index' %}">/admin/</a></p>
+        </footer>
+    </div>
+</body>
+</html>

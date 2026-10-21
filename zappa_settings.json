@@ -1,0 +1,120 @@
+{
+    "dev": {
+        "app_function": "core.wsgi.application",
+        "django_settings": "core.settings",
+        "aws_region": "us-east-2",
+        "project_name": "django-zappa-uv",
+        "runtime": "python3.13",
+        "architecture": "arm64",
+        "s3_bucket": "zappa-django-uv-deploy-143311929310",
+        "keep_warm": true,
+        "memory_size": 512,
+        "timeout_seconds": 30,
+        "use_precompiled_packages": true,
+        "extra_permissions": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:ListBucket"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::zappa-django-uv-db-143311929310",
+                    "arn:aws:s3:::zappa-django-uv-db-143311929310/*"
+                ]
+            }
+        ],
+        "environment_variables": {
+            "STAGE": "dev",
+            "DJANGO_SETTINGS_MODULE": "core.settings",
+            "DEBUG": "False",
+            "ALLOWED_HOSTS": "*",
+            "USE_S3_SQLITE": "true",
+            "SQLITE_S3_BUCKET": "zappa-django-uv-db-143311929310",
+            "SQLITE_DB_NAME": "db.sqlite3"
+        },
+        "exclude": [
+            "*.git*",
+            "*.md",
+            "tests*",
+            "Dockerfile*",
+            "docker-compose*",
+            ".env*",
+            ".venv*",
+            "scripts*",
+            "*.ps1",
+            "*.sh",
+            "*.pyc",
+            "__pycache__*",
+            "*.sqlite3",
+            ".pytest_cache*",
+            ".ruff_cache*",
+            "moto*",
+            "pytest*",
+            "_pytest*",
+            "ruff*",
+            "prek*"
+        ]
+    },
+    "prod": {
+        "app_function": "core.wsgi.application",
+        "django_settings": "core.settings",
+        "aws_region": "us-east-2",
+        "project_name": "django-zappa-uv",
+        "runtime": "python3.13",
+        "architecture": "arm64",
+        "s3_bucket": "zappa-django-uv-deploy-143311929310",
+        "keep_warm": true,
+        "memory_size": 1024,
+        "timeout_seconds": 30,
+        "use_precompiled_packages": true,
+        "extra_permissions": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject",
+                    "s3:ListBucket"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::zappa-django-uv-db-143311929310",
+                    "arn:aws:s3:::zappa-django-uv-db-143311929310/*"
+                ]
+            }
+        ],
+        "environment_variables": {
+            "STAGE": "prod",
+            "DJANGO_SETTINGS_MODULE": "core.settings",
+            "DEBUG": "False",
+            "ALLOWED_HOSTS": "*",
+            "USE_S3_SQLITE": "true",
+            "SQLITE_S3_BUCKET": "zappa-django-uv-db-143311929310",
+            "SQLITE_DB_NAME": "db.sqlite3"
+        },
+        "exclude": [
+            "*.git*",
+            "*.md",
+            "tests*",
+            "Dockerfile*",
+            "docker-compose*",
+            ".env*",
+            ".venv*",
+            "scripts*",
+            "*.ps1",
+            "*.sh",
+            "*.pyc",
+            "__pycache__*",
+            "*.sqlite3",
+            ".pytest_cache*",
+            ".ruff_cache*",
+            "moto*",
+            "pytest*",
+            "_pytest*",
+            "ruff*",
+            "prek*"
+        ]
+    }
+}
