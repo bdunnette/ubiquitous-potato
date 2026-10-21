@@ -38,6 +38,7 @@ A production-ready template for deploying **Django** to **AWS Lambda** and **Ama
 - **Zero-Fixed-Cost Database:** Defaults to `django-s3-sqlite`, synchronizing a single SQLite database file directly with an AWS S3 bucket. Eliminates $15–$30/month RDS minimum costs.
 - **Serverless Scaling:** Deploys via Zappa to AWS Lambda, automatically scaling to zero when inactive and scaling up on demand.
 - **Built-in Diagnostics & Demo:** Includes an interactive dashboard showing runtime environment variables, database backend status, and sample CRUD persistence tests.
+- **REST API Included:** Powered by Django REST Framework (DRF), complete with browsable API UI, serialization, pagination, and full CRUD endpoints backed by SQLite/S3.
 - **Cross-Platform & Windows Ready:** Includes Docker-based packaging scripts (`scripts/zappa-docker.ps1`, `docker-compose.yml`) to guarantee 100% Linux binary wheel compatibility when deploying from Windows or macOS.
 - **Automated CI/CD:** Ready-to-use GitHub Actions workflow (`.github/workflows/deploy.yml`) for automated testing and zero-downtime deployments.
 
@@ -58,8 +59,11 @@ django-zappa-uv/
 │   └── wsgi.py                 # WSGI entry point for Zappa (core.wsgi.application)
 ├── demo/                       # Sample application demonstrating persistence
 │   ├── admin.py
+│   ├── api_urls.py             # DRF router configuration & endpoint routing
+│   ├── api_views.py            # DRF ViewSets & diagnostic API views
 │   ├── apps.py
 │   ├── models.py               # Item model for persistence tests
+│   ├── serializers.py          # DRF model serializers
 │   ├── templates/demo/
 │   │   └── index.html          # Responsive dashboard & CRUD UI
 │   ├── urls.py
@@ -71,6 +75,7 @@ django-zappa-uv/
 │   └── zappa-docker.sh         # Unix Docker-based deployment runner
 ├── tests/                      # Automated test suite
 │   ├── conftest.py
+│   ├── test_api.py             # DRF API endpoint tests
 │   ├── test_settings.py
 │   └── test_views.py
 ├── .env.example                # Example environment configuration
@@ -137,6 +142,149 @@ uv run python manage.py runserver
 ```
 
 Open [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser.
+
+---
+
+## REST API Endpoints (Django REST Framework)
+
+This template includes a fully functional REST API built on [Django REST Framework](https://www.django-rest-framework.org/) (DRF). It provides browsable API views, serialization, pagination, and full CRUD support persisted via SQLite / S3.
+
+### API Overview & Endpoints
+
+| Method | Endpoint | Description | Request Body | Status Codes |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/api/` | **API Root:** Hyperlinked entry point to all resources | None | `200 OK` |
+| `GET` | `/api/info/` | **Diagnostics & Info:** System, database, Lambda, and stats | None | `200 OK` |
+| `GET` | `/api/items/` | **List Items:** Paginated list of items (10 per page) | None | `200 OK` |
+| `POST` | `/api/items/` | **Create Item:** Adds a new item to SQLite / S3 | `{"title": "...", "description": "..."}` | `201 Created`, `400 Bad Request` |
+| `GET` | `/api/items/<id>/` | **Retrieve Item:** Fetch a specific item by primary key | None | `200 OK`, `404 Not Found` |
+| `PUT` | `/api/items/<id>/` | **Update Item:** Full replacement of an item | `{"title": "...", "description": "..."}` | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `PATCH` | `/api/items/<id>/` | **Partial Update:** Update selected fields | `{"title": "..."}` or `{"description": "..."}` | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `DELETE` | `/api/items/<id>/` | **Delete Item:** Permanently delete an item | None | `204 No Content`, `404 Not Found` |
+
+### Browsable API UI
+
+Navigate to [http://127.0.0.1:8000/api/](http://127.0.0.1:8000/api/) (or your deployed AWS API Gateway stage prefix, e.g. `https://<api-id>.execute-api.<region>.amazonaws.com/dev/api/`) in any web browser to explore and interact with endpoints directly using DRF's built-in browsable interface.
+
+### AWS Lambda & Zappa Stage Prefixes (e.g. `/dev/api/`)
+
+When deploying to AWS Lambda behind Amazon API Gateway without a custom domain, URLs include the deployment stage prefix:
+- **Local Development:** `http://127.0.0.1:8000/api/`, `http://127.0.0.1:8000/api/items/`, `http://127.0.0.1:8000/api/info/`
+- **AWS Lambda (`dev` stage):** `https://<api-id>.execute-api.<region>.amazonaws.com/dev/api/`, `.../dev/api/items/`, `.../dev/api/info/`
+- **AWS Lambda (`prod` stage):** `https://<api-id>.execute-api.<region>.amazonaws.com/prod/api/`, `.../prod/api/items/`, `.../prod/api/info/`
+
+Django is configured in `core/settings.py` with dynamic `FORCE_SCRIPT_NAME = f"/{STAGE}"` (when `STAGE` is present and `CUSTOM_DOMAIN` is not set). This guarantees that:
+- DRF's browsable API root (`/dev/api/`) correctly outputs hyperlinked resource URLs containing `/dev/` (e.g. `https://<domain>/dev/api/items/`).
+- DRF pagination links (`next` and `previous`) preserve the `/dev/` stage prefix.
+- Hyperlinked serializers and Django `reverse()` calls always resolve to canonical paths without dropping the stage prefix.
+- Web dashboard templates use reverse URL tags (`{% url 'api-root' %}`, `{% url 'item-list' %}`, `{% url 'api_info' %}`) to render the correct URLs across both local and serverless environments.
+
+---
+
+### Example Requests & Payloads
+
+#### 1. Retrieve API Metadata (`GET /api/info/`)
+
+```bash
+curl -X GET http://127.0.0.1:8000/api/info/
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "name": "Django Serverless Template API",
+  "status": "healthy",
+  "timestamp": 1729544400,
+  "python_version": "3.13.12",
+  "django_version": "6.1.2",
+  "drf_version": "3.18.3",
+  "environment": {
+    "is_lambda": false,
+    "function_name": "Local execution",
+    "aws_region": "local",
+    "debug": true
+  },
+  "database": {
+    "engine": "django.db.backends.sqlite3",
+    "is_s3_sqlite": false,
+    "bucket": "Local disk",
+    "name": "db.sqlite3"
+  },
+  "stats": {
+    "item_count": 5
+  }
+}
+```
+
+#### 2. Create a Record (`POST /api/items/`)
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/items/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Serverless Item",
+    "description": "Persisted to SQLite and synced to S3"
+  }'
+```
+
+**Response (`201 Created`):**
+```json
+{
+  "id": 1,
+  "title": "Serverless Item",
+  "description": "Persisted to SQLite and synced to S3",
+  "created_at": "2026-10-21T20:00:00.000000Z"
+}
+```
+
+#### 3. List Records with Pagination (`GET /api/items/`)
+
+```bash
+curl -X GET http://127.0.0.1:8000/api/items/
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "count": 1,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "title": "Serverless Item",
+      "description": "Persisted to SQLite and synced to S3",
+      "created_at": "2026-10-21T20:00:00.000000Z"
+    }
+  ]
+}
+```
+
+#### 4. Partially Update a Record (`PATCH /api/items/1/`)
+
+```bash
+curl -X PATCH http://127.0.0.1:8000/api/items/1/ \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Updated description content"}'
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "id": 1,
+  "title": "Serverless Item",
+  "description": "Updated description content",
+  "created_at": "2026-10-21T20:00:00.000000Z"
+}
+```
+
+#### 5. Delete a Record (`DELETE /api/items/1/`)
+
+```bash
+curl -X DELETE http://127.0.0.1:8000/api/items/1/
+```
+
+**Response (`204 No Content`)**
 
 ---
 
@@ -409,6 +557,7 @@ uv run pytest
 | **Run test suite** | `uv run pytest` |
 | **Add dependency** | `uv add <package>` |
 | **Local runserver** | `uv run python manage.py runserver` |
+| **Explore REST API** | Open `http://127.0.0.1:8000/api/` in browser or curl |
 | **Run migrations locally** | `uv run python manage.py migrate` |
 | **Deploy first time** | `uv run zappa deploy dev` |
 | **Update deployment** | `uv run zappa update dev` |

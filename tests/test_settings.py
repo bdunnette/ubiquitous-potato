@@ -6,9 +6,10 @@ import core.settings
 
 
 @pytest.fixture(autouse=True)
-def restore_settings():
+def restore_settings(monkeypatch):
     """Ensure settings are restored after reloading in tests."""
     yield
+    monkeypatch.undo()
     reload(core.settings)
 
 
@@ -23,6 +24,13 @@ def test_default_database_is_django_s3_sqlite(monkeypatch):
 
     assert reloaded.DATABASES["default"]["ENGINE"] == "django_s3_sqlite"
     assert reloaded.DATABASES["default"]["BUCKET"] == "my-test-bucket"
+
+
+def test_default_sqlite_s3_bucket_matches_deployment():
+    """
+    Verify the default S3 SQLite bucket matches the deployment bucket.
+    """
+    assert core.settings.SQLITE_S3_BUCKET == "zappa-django-uv-db-143311929310"
 
 
 def test_fallback_database_when_s3_sqlite_disabled(monkeypatch):
@@ -63,6 +71,7 @@ def test_stage_prefix_static_url_on_lambda(monkeypatch):
     monkeypatch.delenv("CUSTOM_DOMAIN", raising=False)
     reloaded = reload(core.settings)
 
+    assert reloaded.FORCE_SCRIPT_NAME == "/dev"
     assert reloaded.STATIC_URL == "/dev/static/"
     assert reloaded.WHITENOISE_STATIC_PREFIX == "/static/"
 
@@ -75,5 +84,6 @@ def test_default_static_url_locally(monkeypatch):
     monkeypatch.delenv("AWS_LAMBDA_FUNCTION_NAME", raising=False)
     reloaded = reload(core.settings)
 
+    assert reloaded.FORCE_SCRIPT_NAME is None
     assert reloaded.STATIC_URL == "/static/"
     assert reloaded.WHITENOISE_STATIC_PREFIX == "/static/"

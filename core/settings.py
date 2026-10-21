@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     # Third party apps
+    "rest_framework",
     "storages",
     # Local apps
     "demo",
@@ -102,7 +103,7 @@ ASGI_APPLICATION = "core.asgi.application"
 # set USE_S3_SQLITE=False in your environment or .env file.
 # -----------------------------------------------------------------------------
 USE_S3_SQLITE = os.environ.get("USE_S3_SQLITE", "true").lower() in ("true", "1", "yes")
-SQLITE_S3_BUCKET = os.environ.get("SQLITE_S3_BUCKET", "my-django-zappa-db-bucket")
+SQLITE_S3_BUCKET = os.environ.get("SQLITE_S3_BUCKET", "zappa-django-uv-db-143311929310")
 SQLITE_DB_NAME = os.environ.get("SQLITE_DB_NAME", "db.sqlite3")
 
 if USE_S3_SQLITE:
@@ -155,6 +156,21 @@ USE_I18N = True
 USE_TZ = True
 
 # -----------------------------------------------------------------------------
+# Django REST Framework Configuration
+# -----------------------------------------------------------------------------
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 10,
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
+    ],
+}
+
+# -----------------------------------------------------------------------------
 # Static and Media Files
 # -----------------------------------------------------------------------------
 # On AWS Lambda via API Gateway default execute-api domains, URLs include the stage
@@ -166,9 +182,11 @@ if not STAGE and os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
     STAGE = os.environ.get("AWS_LAMBDA_FUNCTION_NAME", "").rsplit("-", 1)[-1]
 
 if STAGE and not os.environ.get("CUSTOM_DOMAIN"):
+    FORCE_SCRIPT_NAME = f"/{STAGE}"
     STATIC_URL = f"/{STAGE}/static/"
     MEDIA_URL = f"/{STAGE}/media/"
 else:
+    FORCE_SCRIPT_NAME = None
     STATIC_URL = "/static/"
     MEDIA_URL = "/media/"
 

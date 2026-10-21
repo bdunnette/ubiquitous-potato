@@ -28,6 +28,7 @@ def test_home_page_renders(client):
     assert response.status_code == 200
     assert b"Django Serverless Template" in response.content
     assert reverse("admin:index").encode() in response.content
+    assert b"/api/" in response.content
 
 
 @pytest.mark.django_db

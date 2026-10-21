@@ -337,6 +337,24 @@
             {% endif %}
         </div>
 
+        <!-- REST API Card -->
+        <div class="card">
+            <h2 class="card-title">Django REST Framework (DRF) API</h2>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                This template includes RESTful JSON endpoints with browsable documentation powered by Django REST Framework:
+            </p>
+            <ul style="margin-left: 1.5rem; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text);">
+                <li><a href="{% url 'api-root' %}" style="color: var(--primary-accent); font-weight: 600;">{% url 'api-root' %}</a> &mdash; Browsable API root</li>
+                <li><a href="{% url 'item-list' %}" style="color: var(--primary-accent); font-weight: 600;">{% url 'item-list' %}</a> &mdash; Items CRUD endpoint (GET, POST, PUT, PATCH, DELETE)</li>
+                <li><a href="{% url 'api_info' %}" style="color: var(--primary-accent); font-weight: 600;">{% url 'api_info' %}</a> &mdash; System runtime &amp; persistence diagnostics</li>
+            </ul>
+            <pre><code># Test API endpoints via curl
+curl -X GET {{ request.scheme }}://{{ request.get_host }}{% url 'item-list' %}
+curl -X POST {{ request.scheme }}://{{ request.get_host }}{% url 'item-list' %} \
+  -H "Content-Type: application/json" \
+  -d '{"title": "CLI Item", "description": "Created with curl"}'</code></pre>
+        </div>
+
         <!-- Deployment Quick Reference Card -->
         <div class="card">
             <h2 class="card-title">Zappa & uv Quick Reference</h2>
@@ -366,7 +384,7 @@ uv run zappa tail dev</code></pre>
         </div>
 
         <footer>
-            <p>Django Serverless Template &bull; Health Check: <a href="{% url 'health_check' %}">/health/</a> &bull; Admin: <a href="{% url 'admin:index' %}">/admin/</a></p>
+            <p>Django Serverless Template &bull; Health Check: <a href="{% url 'health_check' %}">{% url 'health_check' %}</a> &bull; REST API: <a href="{% url 'api-root' %}">{% url 'api-root' %}</a> &bull; Admin: <a href="{% url 'admin:index' %}">{% url 'admin:index' %}</a></p>
         </footer>
     </div>
 </body>
